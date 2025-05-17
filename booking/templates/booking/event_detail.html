@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>{{ event.title }}</h1>
+<p>{{ event.description }}</p>
+<p>Date: {{ event.date_time }}</p>
+<p>Venue: {{ event.venue.name }}</p>
+<p>Price: ${{ event.price }}</p>
+
+<div class="event-detail">
+    <h1>{{ event.title }}</h1>
+    <p><strong>Дата:</strong> {{ event.date_time|date:"d.m.Y H:i" }}</p>
+    <p><strong>Место:</strong> {{ event.venue.name }}</p>
+    <p><strong>Описание:</strong> {{ event.description }}</p>
+    <p><strong>Цена:</strong> {{ event.price }} руб.</p>
+
+    <a href="{% url 'home' %}" class="btn">Назад к списку</a>
+</div>
+
+<div class="venue-layout">
+    {% if event.venue.layout_image %}
+    <img src="{{ event.venue.layout_image.url }}" alt="{{ event.venue.name }} layout" usemap="#seatmap">
+    {% endif %}
+    
+    <div class="interactive-map" style="position: relative; width: {{ event.venue.layout_image.width }}px; height: {{ event.venue.layout_image.height }}px;">
+        {% for seat in seats %}
+        <div class="seat {% if seat.id in booked_seats %}booked{% endif %}" 
+             style="position: absolute; left: {{ seat.x_coord }}px; top: {{ seat.y_coord }}px; width: 30px; height: 30px; background: {% if seat.id in booked_seats %}red{% else %}green{% endif %};"
+             title="Row {{ seat.row }} Seat {{ seat.number }} - {{ seat.category }}"
+             onclick="{% if seat.id not in booked_seats %}window.location.href='{% url 'book_seat' event.id seat.id %}'{% endif %}">
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if user.is_authenticated and user == event.organizer %}
+<a href="{% url 'edit_event' event.id %}" class="btn btn-primary">Edit Event</a>
+{% endif %}
+{% endblock %}

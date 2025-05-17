@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>{% if venue %}Edit {{ venue.name }}{% else %}Create New Venue{% endif %}</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Save Venue</button>
+</form>
+
+{% if venue %}
+<h2>Seats</h2>
+<div class="seat-editor">
+    <div class="venue-layout" style="position: relative; width: 800px; height: 600px; border: 1px solid #ccc;">
+        {% if venue.layout_image %}
+        <img src="{{ venue.layout_image.url }}" alt="{{ venue.name }} layout" style="width: 100%; height: 100%;">
+        {% endif %}
+        
+        {% for seat in seats %}
+        <div class="seat" 
+             style="position: absolute; left: {{ seat.x_coord }}px; top: {{ seat.y_coord }}px; width: 30px; height: 30px; background: blue;"
+             title="Row {{ seat.row }} Seat {{ seat.number }}"
+             onclick="window.location.href='{% url 'edit_seat' seat.id %}'">
+        </div>
+        {% endfor %}
+        
+        <form method="post" action="{% url 'add_seat' venue.id %}" style="position: absolute; bottom: 10px; right: 10px;">
+            {% csrf_token %}
+            <input type="hidden" name="x_coord" id="new_seat_x">
+            <input type="hidden" name="y_coord" id="new_seat_y">
+            <button type="submit" class="btn btn-success">Add Seat Here</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.querySelector('.venue-layout').addEventListener('click', function(e) {
+    if (e.target === this) { // Clicked on the layout, not a seat
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        document.getElementById('new_seat_x').value = x;
+        document.getElementById('new_seat_y').value = y;
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

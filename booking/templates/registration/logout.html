@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Выход из системы" %}{% endblock %}
+
+{% block content %}
+<div class="logout-container">
+    <div class="logout-message">
+        <h2>{% trans "Вы успешно вышли из системы" %}</h2>
+
+        {% if messages %}
+        <div class="logout-alerts">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="logout-options">
+            <a href="{% url 'login' %}" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt"></i> {% trans "Войти снова" %}
+            </a>
+
+            <a href="{% url 'booking:home' %}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> {% trans "На главную" %}
+            </a>
+        </div>
+    </div>
+
+    {% if not user.is_authenticated %}
+    <script>
+        // Очистка остаточных данных после выхода
+        localStorage.removeItem('userSessionData');
+        sessionStorage.clear();
+    </script>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .logout-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .logout-message h2 {
+        color: #4CAF50;
+        margin-bottom: 1.5rem;
+    }
+
+    .logout-alerts {
+        margin: 1rem 0;
+    }
+
+    .logout-options {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .logout-options .btn {
+        min-width: 150px;
+    }
+
+    @media (max-width: 576px) {
+        .logout-options {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

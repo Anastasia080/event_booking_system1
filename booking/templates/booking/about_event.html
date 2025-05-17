@@ -1,0 +1,169 @@
+{% extends 'booking/base.html' %}
+{% load static %}
+
+{% block title %}{{ event.title }} - Детали мероприятия{% endblock %}
+
+{% block content %}
+<div class="event-detail-container">
+    <div class="event-header">
+        <h1>{{ event.title }}</h1>
+        <div class="event-meta">
+            <span class="event-date">
+                <i class="fas fa-calendar-alt"></i> {{ event.date_time|date:"d.m.Y H:i" }}
+            </span>
+            <span class="event-venue">
+                <i class="fas fa-map-marker-alt"></i> {{ event.venue.name }}
+            </span>
+            <span class="event-price">
+                <i class="fas fa-tag"></i> {{ event.price }} руб.
+            </span>
+        </div>
+    </div>
+
+    <div class="event-content">
+        <div class="event-description">
+            <h2>Описание мероприятия</h2>
+            <p>{{ event.description }}</p>
+        </div>
+
+        <div class="event-venue-info">
+            <h2>О месте проведения</h2>
+            <div class="venue-details">
+                <p><strong>Адрес:</strong> {{ event.venue.address }}</p>
+                <p><strong>Вместимость:</strong> {{ event.venue.capacity }} человек</p>
+                {% if event.venue.description %}
+                <p><strong>Описание:</strong> {{ event.venue.description }}</p>
+                {% endif %}
+            </div>
+            
+            {% if event.venue.layout_image %}
+            <div class="venue-map">
+                <h3>Схема зала</h3>
+                <img src="{{ event.venue.layout_image.url }}" alt="Схема зала {{ event.venue.name }}" class="venue-layout">
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="event-actions">
+            <a href="{% url 'booking:home' %}" class="btn btn-back">
+                <i class="fas fa-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .event-detail-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .event-header {
+        background-color: #4CAF50;
+        color: white;
+        padding: 30px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .event-header h1 {
+        margin: 0 0 15px 0;
+        font-size: 2.5em;
+    }
+
+    .event-meta {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .event-meta span {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.1em;
+    }
+
+    .event-content {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+    }
+
+    .event-description {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .event-venue-info {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .venue-details p {
+        margin-bottom: 15px;
+    }
+
+    .venue-layout {
+        width: 100%;
+        border-radius: 8px;
+        margin-top: 15px;
+        border: 1px solid #ddd;
+    }
+
+    .event-actions {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back {
+        background: #f5f5f5;
+        color: #333;
+    }
+
+    .btn-back:hover {
+        background: #e0e0e0;
+    }
+
+    .btn-primary {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #3e8e41;
+    }
+
+    @media (max-width: 768px) {
+        .event-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .event-meta {
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+    }
+</style>
+{% endblock %}
