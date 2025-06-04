@@ -59,7 +59,7 @@ class VenueForm(forms.ModelForm):
 class SeatForm(forms.ModelForm):
     class Meta:
         model = Seat
-        fields = ['row', 'number', 'category', 'x_coord', 'y_coord']
+        fields = ['row', 'number', 'x_coord', 'y_coord']
         labels = {
             'row': _('Ряд'),
             'number': _('Номер места'),

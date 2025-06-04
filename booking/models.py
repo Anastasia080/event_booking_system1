@@ -14,12 +14,14 @@ class Venue(models.Model):
         blank=True
     )
 
+    def __str__(self):
+        return self.name
+
     class Meta:
         verbose_name = _('Место проведения')
         verbose_name_plural = _('Места проведения')
-
-    def __str__(self):
-        return self.name
+        def __str__(self):
+         return self.name
 
 class Event(models.Model):
     title = models.CharField(_('Название мероприятия'), max_length=200)
@@ -52,24 +54,66 @@ class Event(models.Model):
     def __str__(self):
         return f"{self.title} ({self.venue.name})"
 
-class Seat(models.Model):
-    venue = models.ForeignKey(
-        Venue,
-        verbose_name=_('Место проведения'),
-        on_delete=models.CASCADE
-    )
-    row = models.CharField(_('Ряд'), max_length=10)
-    number = models.PositiveIntegerField(_('Номер места'))
-    category = models.CharField(_('Категория места'), max_length=50)
-    x_coord = models.PositiveIntegerField(_('Координата X'))
-    y_coord = models.PositiveIntegerField(_('Координата Y'))
+
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+
+class SeatCategory(models.Model):
+    name = models.CharField(max_length=100, verbose_name=_("Название категории"))
+    price = models.PositiveIntegerField(verbose_name=_("Цена"))
+    color = models.CharField(max_length=20, default='#4CAF50', verbose_name=_("Цвет для отображения"))
 
     class Meta:
-        verbose_name = _('Место')
-        verbose_name_plural = _('Места')
+        verbose_name = _("Категория мест")
+        verbose_name_plural = _("Категории мест")
+
+    def __str__(self):
+        return f"{self.name} ({self.price} руб.)"
+
+
+class Seat(models.Model):
+    venue = models.ForeignKey(
+        'Venue',
+        on_delete=models.CASCADE,
+        verbose_name=_("Зал"),
+        related_name='seats'
+    )
+    row = models.PositiveIntegerField(verbose_name=_("Ряд"))
+    number = models.PositiveIntegerField(verbose_name=_("Номер места"))
+    x_coord = models.PositiveIntegerField(verbose_name=_("Координата X"), blank=True, null=True)
+    y_coord = models.PositiveIntegerField(verbose_name=_("Координата Y"), blank=True, null=True)
+    is_booked = models.BooleanField(default=False, verbose_name=_("Забронировано"))
+    category = models.ForeignKey(
+        SeatCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("Категория места")
+    )
+    price = models.PositiveIntegerField(
+        verbose_name=_("Цена"),
+        null=True,
+        blank=True,
+        help_text=_("Если не указана, будет использована цена из категории или события")
+    )
+
+    class Meta:
+        verbose_name = _("Место")
+        verbose_name_plural = _("Места")
+        unique_together = [['venue', 'row', 'number']]
+        ordering = ['row', 'number']
 
     def __str__(self):
         return f"{_('Ряд')} {self.row}, {_('Место')} {self.number}"
+
+    def get_price(self, event):
+        """Возвращает цену места с приоритетом: место > категория > событие"""
+        if self.price:
+            return self.price
+        if self.category and self.category.price:
+            return self.category.price
+        return event.price
 
 class Booking(models.Model):
     event = models.ForeignKey(

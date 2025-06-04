@@ -1,7 +1,21 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from .models import Venue, Event, Seat, Booking
+from .models import Venue, Event, Seat, Booking, SeatCategory
 
+@admin.register(SeatCategory)
+class SeatCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'price', 'color')
+    search_fields = ('name',)
+
+@admin.register(Seat)
+class SeatAdmin(admin.ModelAdmin):
+    list_display = ('venue', 'row', 'number', 'category', 'get_price_display', 'is_booked')
+    list_filter = ('venue', 'category', 'is_booked')
+    search_fields = ('row', 'number')
+
+    def get_price_display(self, obj):
+        return obj.price or (obj.category.price if obj.category else '-')
+    get_price_display.short_description = 'Цена'
 
 class SeatInline(admin.TabularInline):
     model = Seat

@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Event, Venue, Seat, Booking
+from .models import Event, Venue, Seat, Booking,SeatCategory
 from .forms import EventForm, VenueForm, SeatForm
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -19,6 +19,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
+from itertools import groupby
+from operator import attrgetter
 
 # Кастомный класс для входа с дополнительными настройками
 class CustomLoginView(LoginView):
@@ -99,13 +101,17 @@ def event_list(request):
 @login_required
 def event_detail(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
-    seats = Seat.objects.filter(venue=event.venue)
-    booked_seats = Booking.objects.filter(event=event).values_list('seat_id', flat=True)
+    seats = Seat.objects.filter(venue=event.venue).order_by('row', 'number')
+    categories = SeatCategory.objects.all()
+    # Группируем места по рядам
+    seat_rows = []
+    for row, seats_in_row in groupby(seats, key=attrgetter('row')):
+        seat_rows.append(list(seats_in_row))
 
     return render(request, 'booking/event_detail.html', {
         'event': event,
-        'seats': seats,
-        'booked_seats': booked_seats
+        'seat_rows': seat_rows,
+        'seat_categories': categories,
     })
 
 @login_required
@@ -124,17 +130,18 @@ def create_event(request):
     return render(request, 'booking/create_event.html', {'form': form})
 
 
+# views.py
 @login_required
 def book_seat(request, event_id, seat_id):
     event = get_object_or_404(Event, pk=event_id)
     seat = get_object_or_404(Seat, pk=seat_id)
 
-    # Check if seat is already booked
+    # Проверяем, не забронировано ли уже место
     if Booking.objects.filter(event=event, seat=seat).exists():
-        messages.error(request, 'This seat is already booked!')
+        messages.error(request, 'Это место уже забронировано!')
         return redirect('event_detail', event_id=event.id)
 
-    # Create booking
+    # Создаем бронирование
     Booking.objects.create(
         event=event,
         user=request.user,
@@ -142,9 +149,54 @@ def book_seat(request, event_id, seat_id):
         is_confirmed=True
     )
 
-    messages.success(request, 'Seat booked successfully!')
+    messages.success(request, f'Место {seat.row}-{seat.number} успешно забронировано!')
     return redirect('event_detail', event_id=event.id)
 
+def book_seats(request, event_id):
+    if not request.user.is_authenticated:
+        messages.error(request, "Для бронирования необходимо войти в систему.")
+        return redirect('booking:login')
+
+    event = get_object_or_404(Event, id=event_id)
+
+    if request.method == 'POST':
+        selected_seats_ids = request.POST.get('selected_seats', '').split(',')
+        selected_seats_ids = [int(id) for id in selected_seats_ids if id.isdigit()]
+
+        if not selected_seats_ids:
+            messages.error(request, "Не выбрано ни одного места.")
+            return redirect('booking:event_detail', event_id=event_id)
+
+        # Проверяем, что места еще не забронированы
+        available_seats = Seat.objects.filter(
+            id__in=selected_seats_ids,
+            event=event,
+            is_booked=False
+        )
+
+        if available_seats.count() != len(selected_seats_ids):
+            messages.error(request, "Некоторые из выбранных мест уже заняты.")
+            return redirect('booking:event_detail', event_id=event_id)
+
+        # Создаем бронирование
+        try:
+            for seat in available_seats:
+                Booking.objects.create(
+                    user=request.user,
+                    event=event,
+                    seat=seat
+                )
+                seat.is_booked = True
+                seat.save()
+
+            messages.success(request, "Места успешно забронированы!")
+            return redirect('booking:event_detail', event_id=event_id)
+
+        except Exception as e:
+            messages.error(request, f"Произошла ошибка при бронировании: {str(e)}")
+            return redirect('booking:event_detail', event_id=event_id)
+
+    return redirect('booking:event_detail', event_id=event_id)
 
 @login_required
 def venue_editor(request, venue_id=None):
